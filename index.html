@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThreadsAuto — Threads 자동화 툴</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --bg2: #111118;
+  --sur: #16161f;
+  --sur2: #1c1c28;
+  --acc: #6c63ff;
+  --acc2: #ff6b6b;
+  --green: #00d68f;
+  --yellow: #ffd166;
+  --txt: #f0f0fa;
+  --txt2: #8888aa;
+  --bdr: rgba(255,255,255,.08);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'Noto Sans KR', sans-serif;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* 노이즈 텍스처 */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:0;
+  opacity:.4;
+}
+
+/* 헤더 */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 16px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(10,10,15,.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--bdr);
+}
+
+.nav-logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--acc), var(--green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-cta {
+  padding: 8px 20px;
+  background: var(--acc);
+  color: #fff;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all .2s;
+}
+.nav-cta:hover { background: #7c75ff; transform: translateY(-1px); }
+
+/* 히어로 */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-glow {
+  position: absolute;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(108,99,255,.15) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(108,99,255,.15);
+  border: 1px solid rgba(108,99,255,.3);
+  border-radius: 100px;
+  font-size: 12px;
+  color: var(--acc);
+  font-weight: 700;
+  margin-bottom: 28px;
+  animation: fadeUp .6s ease forwards;
+}
+
+.hero-badge::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--acc);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .5; transform: scale(1.5); }
+}
+
+.hero-title {
+  font-size: clamp(42px, 8vw, 80px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  margin-bottom: 20px;
+  animation: fadeUp .6s .1s ease both;
+}
+
+.hero-title .highlight {
+  background: linear-gradient(135deg, var(--acc), var(--green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-desc {
+  font-size: clamp(15px, 2.5vw, 18px);
+  color: var(--txt2);
+  max-width: 560px;
+  margin: 0 auto 40px;
+  line-height: 1.8;
+  animation: fadeUp .6s .2s ease both;
+}
+
+.hero-btns {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: fadeUp .6s .3s ease both;
+}
+
+.btn-primary {
+  padding: 14px 32px;
+  background: var(--acc);
+  color: #fff;
+  border-radius: 100px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary:hover { background: #7c75ff; transform: translateY(-2px); box-shadow: 0 12px 40px rgba(108,99,255,.3); }
+
+.btn-secondary {
+  padding: 14px 32px;
+  background: transparent;
+  color: var(--txt);
+  border: 1px solid var(--bdr);
+  border-radius: 100px;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all .2s;
+}
+.btn-secondary:hover { border-color: var(--acc); color: var(--acc); }
+
+/* 플로팅 카드 */
+.hero-visual {
+  margin-top: 64px;
+  width: 100%;
+  max-width: 800px;
+  position: relative;
+  animation: fadeUp .8s .4s ease both;
+}
+
+.mock-card {
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.mock-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--acc), var(--green), var(--acc2));
+}
+
+.mock-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+.mock-dot.r { background: #ff5f57; }
+.mock-dot.y { background: #ffbd2e; }
+.mock-dot.g { background: #28c840; }
+
+.mock-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.mock-tab {
+  padding: 5px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: default;
+}
+
+.mock-tab.active { background: rgba(108,99,255,.2); color: var(--acc); border: 1px solid rgba(108,99,255,.3); }
+.mock-tab:not(.active) { background: var(--sur2); color: var(--txt2); }
+
+.mock-text-area {
+  background: var(--sur2);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 13px;
+  color: var(--txt);
+  line-height: 1.7;
+  margin-bottom: 12px;
+  border: 1px solid var(--bdr);
+  min-height: 80px;
+}
+
+.mock-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.mock-btn {
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mock-btn.green { background: rgba(0,214,143,.15); color: var(--green); border: 1px solid rgba(0,214,143,.3); }
+.mock-btn.purple { background: rgba(108,99,255,.15); color: var(--acc); border: 1px solid rgba(108,99,255,.3); }
+.mock-btn.gray { background: var(--sur2); color: var(--txt2); border: 1px solid var(--bdr); }
+
+.typing-text {
+  overflow: hidden;
+  border-right: 2px solid var(--acc);
+  white-space: nowrap;
+  animation: typing 2s steps(40) .8s both, blink .7s step-end infinite;
+}
+
+@keyframes typing { from { width: 0 } to { width: 100% } }
+@keyframes blink { 50% { border-color: transparent } }
+
+/* 숫자 섹션 */
+.stats {
+  padding: 60px 24px;
+  display: flex;
+  gap: 1px;
+  background: var(--bdr);
+  margin: 0;
+}
+
+.stat-item {
+  flex: 1;
+  background: var(--bg);
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.stat-num {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--acc), var(--green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--txt2);
+}
+
+/* 차별점 섹션 */
+.section {
+  padding: 100px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.section-tag {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--acc);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.section-desc {
+  font-size: 16px;
+  color: var(--txt2);
+  max-width: 560px;
+  line-height: 1.8;
+}
+
+/* 기능 그리드 */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 60px;
+}
+
+.feature-card {
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  border-radius: 20px;
+  padding: 32px;
+  transition: all .3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card:hover {
+  border-color: rgba(108,99,255,.3);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+
+.feature-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(108,99,255,.05) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.feature-card:hover::after { opacity: 1; }
+
+.feature-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.feature-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.feature-desc {
+  font-size: 14px;
+  color: var(--txt2);
+  line-height: 1.7;
+}
+
+.feature-tag {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 3px 10px;
+  background: rgba(0,214,143,.1);
+  border: 1px solid rgba(0,214,143,.2);
+  border-radius: 100px;
+  font-size: 11px;
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* 비교 섹션 */
+.compare {
+  background: var(--bg2);
+  padding: 100px 24px;
+}
+
+.compare-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.compare-table {
+  margin-top: 60px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--bdr);
+}
+
+.compare-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  border-bottom: 1px solid var(--bdr);
+}
+
+.compare-row:last-child { border-bottom: none; }
+
+.compare-row.header {
+  background: var(--sur);
+}
+
+.compare-cell {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: var(--txt2);
+  display: flex;
+  align-items: center;
+}
+
+.compare-row.header .compare-cell {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--txt);
+}
+
+.compare-cell.highlight {
+  background: rgba(108,99,255,.05);
+  color: var(--txt);
+}
+
+.check { color: var(--green); font-size: 16px; }
+.cross { color: #ff5252; font-size: 16px; }
+.partial { color: var(--yellow); font-size: 13px; }
+
+/* 요금제 */
+.pricing {
+  padding: 100px 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 60px;
+  text-align: left;
+}
+
+.plan-card {
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  border-radius: 20px;
+  padding: 28px;
+  position: relative;
+  transition: all .3s;
+}
+
+.plan-card:hover { transform: translateY(-4px); }
+
+.plan-card.featured {
+  border-color: var(--acc);
+  background: linear-gradient(135deg, rgba(108,99,255,.1) 0%, var(--sur) 60%);
+}
+
+.plan-badge {
+  position: absolute;
+  top: -12px; right: 20px;
+  background: var(--acc);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 100px;
+}
+
+.plan-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.plan-price {
+  font-family: 'Space Mono', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--txt);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.plan-price span {
+  font-size: 14px;
+  color: var(--txt2);
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.plan-period {
+  font-size: 12px;
+  color: var(--txt2);
+  margin-bottom: 20px;
+}
+
+.plan-features {
+  list-style: none;
+  font-size: 13px;
+  color: var(--txt2);
+  line-height: 2;
+}
+
+.plan-features li::before {
+  content: '✓ ';
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* 사용 방법 */
+.how {
+  background: var(--bg2);
+  padding: 100px 24px;
+}
+
+.how-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.steps {
+  margin-top: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 24px;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--bdr);
+  position: relative;
+}
+
+.step:last-child { border-bottom: none; }
+
+.step-num {
+  width: 48px;
+  height: 48px;
+  background: rgba(108,99,255,.15);
+  border: 1px solid rgba(108,99,255,.3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--acc);
+  flex-shrink: 0;
+}
+
+.step-content h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.step-content p {
+  font-size: 14px;
+  color: var(--txt2);
+  line-height: 1.7;
+}
+
+/* CTA */
+.cta {
+  padding: 120px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(108,99,255,.12) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.cta-title {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  margin-bottom: 20px;
+  line-height: 1.15;
+}
+
+.cta-desc {
+  font-size: 16px;
+  color: var(--txt2);
+  margin-bottom: 40px;
+  line-height: 1.8;
+}
+
+.cta-kakao {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  background: #FEE500;
+  color: #000;
+  border-radius: 100px;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all .2s;
+}
+.cta-kakao:hover { transform: translateY(-3px); box-shadow: 0 16px 48px rgba(254,229,0,.25); }
+
+/* 푸터 */
+footer {
+  padding: 32px 24px;
+  border-top: 1px solid var(--bdr);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.footer-logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--acc), var(--green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.footer-txt {
+  font-size: 12px;
+  color: var(--txt2);
+}
+
+/* 애니메이션 */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all .7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .nav { padding: 14px 20px; }
+  .stats { flex-direction: column; gap: 1px; }
+  .compare-row { grid-template-columns: 1.5fr 1fr 1fr; }
+  .compare-cell { padding: 12px; font-size: 12px; }
+  footer { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- 네비게이션 -->
+<nav class="nav">
+  <div class="nav-logo">ThreadsAuto</div>
+  <a href="https://open.kakao.com/o/sdwT0Zoi" target="_blank" class="nav-cta">💬 초대코드 문의</a>
+</nav>
+
+<!-- 히어로 -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge">🚀 Threads 자동화 솔루션</div>
+  <h1 class="hero-title">
+    Threads 관리,<br>
+    이제 <span class="highlight">자동으로</span>
+  </h1>
+  <p class="hero-desc">
+    AI가 글을 쓰고, 예약하고, 자동 발행까지.<br>
+    매일 Threads에 올리는 게 부담스러웠다면 지금 바로 해결해요.
+  </p>
+  <div class="hero-btns">
+    <a href="https://open.kakao.com/o/sdwT0Zoi" target="_blank" class="btn-primary">💬 초대코드 문의하기</a>
+    <a href="https://zheiia-thread.up.railway.app" target="_blank" class="btn-secondary">앱 바로가기 →</a>
+  </div>
+
+  <!-- 앱 목업 -->
+  <div class="hero-visual">
+    <div class="mock-card">
+      <div class="mock-header">
+        <div class="mock-dot r"></div>
+        <div class="mock-dot y"></div>
+        <div class="mock-dot g"></div>
+        <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--txt2);margin-left:8px">ThreadsAuto</span>
+      </div>
+      <div class="mock-tabs">
+        <div class="mock-tab active">✏️ 글 작성</div>
+        <div class="mock-tab">📅 예약 목록</div>
+        <div class="mock-tab">🤖 자동 스케줄러</div>
+      </div>
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">주제 입력</div>
+      <div style="background:var(--sur2);border:1px solid var(--bdr);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--txt);margin-bottom:12px">쿠팡 생활용품 추천</div>
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">생성된 글</div>
+      <div class="mock-text-area">
+        <div class="typing-text">이거 사고 나서 삶의 질이 달라졌네</div>
+        <div style="margin-top:6px;color:var(--txt2)">솔직히 이 정도일 줄 몰랐다</div>
+        <div style="margin-top:6px;color:var(--txt2)">맨날 이것만 쓰게 될 줄이야</div>
+      </div>
+      <div class="mock-btns">
+        <div class="mock-btn green">⚡ 즉시 발행</div>
+        <div class="mock-btn purple">📅 예약 발행</div>
+        <div class="mock-btn gray">🔄 재생성</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 핵심 수치 -->
+<div class="stats">
+  <div class="stat-item reveal">
+    <div class="stat-num">60일</div>
+    <div class="stat-label">장기 토큰 유효 기간</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">24/7</div>
+    <div class="stat-label">자동 예약 발행</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">6계정</div>
+    <div class="stat-label">프리미엄 동시 관리</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">AI</div>
+    <div class="stat-label">위트 있는 글 자동 생성</div>
+  </div>
+</div>
+
+<!-- 주요 기능 -->
+<section class="section">
+  <div class="section-tag reveal">Features</div>
+  <h2 class="section-title reveal">하나의 툴로 모든 걸</h2>
+  <p class="section-desc reveal">글 작성부터 예약, 자동 발행, 쿠팡 파트너스 연동까지 Threads 운영에 필요한 모든 걸 담았어요.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card reveal">
+      <span class="feature-icon">🤖</span>
+      <div class="feature-title">AI 글 자동 생성</div>
+      <div class="feature-desc">주제만 입력하면 위트 있고 자연스러운 한국어 게시글을 즉시 생성해요. 뻔한 표현 없이 진짜 사람처럼 써줘요.</div>
+      <div class="feature-tag">GPT 기반</div>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">📅</span>
+      <div class="feature-title">예약 발행</div>
+      <div class="feature-desc">원하는 시간에 자동으로 발행돼요. 글 + 댓글도 시간차를 두고 예약할 수 있어요.</div>
+      <div class="feature-tag">1년 후까지 예약</div>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-title">자동 스케줄러</div>
+      <div class="feature-desc">매일 정해진 시간에 자동으로 글을 생성하고 발행해요. 주제를 여러 개 등록해두면 랜덤으로 발행돼요.</div>
+      <div class="feature-tag">프리미엄 전용</div>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">🛒</span>
+      <div class="feature-title">쿠팡 파트너스 연동</div>
+      <div class="feature-desc">링크와 수수료 안내 문구를 자동으로 댓글에 삽입해요. 위치와 링크 개수도 직접 설정 가능해요.</div>
+      <div class="feature-tag">수수료 자동 안내</div>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">👥</span>
+      <div class="feature-title">멀티 계정 관리</div>
+      <div class="feature-desc">최대 6개 계정을 동시에 관리하고, 각 계정마다 다른 주제와 일정으로 운영할 수 있어요.</div>
+      <div class="feature-tag">계정당 독립 운영</div>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">✍️</span>
+      <div class="feature-title">나만의 말투 설정</div>
+      <div class="feature-desc">AI가 내 스타일로 글을 쓰게 말투 예시와 프롬프트를 저장할 수 있어요. 브랜드 톤앤매너 유지에 딱이에요.</div>
+      <div class="feature-tag">커스텀 프롬프트</div>
+    </div>
+  </div>
+</section>
+
+<!-- 비교 섹션 -->
+<div class="compare">
+  <div class="compare-inner">
+    <div class="section-tag reveal">Comparison</div>
+    <h2 class="section-title reveal">일반 예약과 뭐가 다를까요?</h2>
+    <p class="section-desc reveal">Threads 앱 기본 기능과 ThreadsAuto의 차이를 한눈에 비교해봤어요.</p>
+
+    <div class="compare-table reveal">
+      <div class="compare-row header">
+        <div class="compare-cell">기능</div>
+        <div class="compare-cell">Threads 기본</div>
+        <div class="compare-cell highlight">ThreadsAuto</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">AI 글 자동 생성</div>
+        <div class="compare-cell"><span class="cross">✕</span></div>
+        <div class="compare-cell highlight"><span class="check">✓</span></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">예약 발행</div>
+        <div class="compare-cell"><span class="partial">기본 지원</span></div>
+        <div class="compare-cell highlight"><span class="check">✓ 댓글 예약 포함</span></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">자동 스케줄러</div>
+        <div class="compare-cell"><span class="cross">✕</span></div>
+        <div class="compare-cell highlight"><span class="check">✓ 24/7 자동</span></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">멀티 계정 관리</div>
+        <div class="compare-cell"><span class="cross">✕</span></div>
+        <div class="compare-cell highlight"><span class="check">✓ 최대 6계정</span></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">쿠팡 파트너스 연동</div>
+        <div class="compare-cell"><span class="cross">✕</span></div>
+        <div class="compare-cell highlight"><span class="check">✓ 자동 삽입</span></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">말투/프롬프트 커스텀</div>
+        <div class="compare-cell"><span class="cross">✕</span></div>
+        <div class="compare-cell highlight"><span class="check">✓</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 요금제 -->
+<section class="pricing">
+  <div class="section-tag reveal">Pricing</div>
+  <h2 class="section-title reveal">요금제 선택</h2>
+  <p class="section-desc reveal" style="margin: 0 auto 0">7일 무료 체험으로 시작하고, 맞는 플랜을 골라보세요.</p>
+
+  <div class="plan-grid">
+    <div class="plan-card reveal">
+      <div class="plan-name">무료 체험</div>
+      <div class="plan-price">0<span>원</span></div>
+      <div class="plan-period">7일</div>
+      <ul class="plan-features">
+        <li>계정 1개</li>
+        <li>일 2회 발행</li>
+        <li>AI 글생성 100회/일</li>
+        <li>예약 발행</li>
+      </ul>
+    </div>
+    <div class="plan-card reveal">
+      <div class="plan-name">베이직</div>
+      <div class="plan-price">4,900<span>원</span></div>
+      <div class="plan-period">/월 · 30일</div>
+      <ul class="plan-features">
+        <li>AI 글생성 200회/일</li>
+        <li>글생성 + 복사만 가능</li>
+        <li>발행은 불가</li>
+      </ul>
+    </div>
+    <div class="plan-card reveal">
+      <div class="plan-name">프로</div>
+      <div class="plan-price">9,900<span>원</span></div>
+      <div class="plan-period">/월 · 30일</div>
+      <ul class="plan-features">
+        <li>계정 2개</li>
+        <li>일 3회 발행</li>
+        <li>AI 글생성 200회/일</li>
+        <li>예약 + 즉시 발행</li>
+      </ul>
+    </div>
+    <div class="plan-card featured reveal">
+      <div class="plan-badge">인기</div>
+      <div class="plan-name" style="color:var(--acc)">프리미엄</div>
+      <div class="plan-price">19,900<span>원</span></div>
+      <div class="plan-period">/월 · 60일</div>
+      <ul class="plan-features">
+        <li>계정 6개</li>
+        <li>일 5회 발행</li>
+        <li>AI 글생성 200회/일</li>
+        <li>자동 스케줄러</li>
+        <li>쿠팡 파트너스 연동</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 사용 방법 -->
+<div class="how">
+  <div class="how-inner">
+    <div class="section-tag reveal">How to Use</div>
+    <h2 class="section-title reveal">4단계로 시작하기</h2>
+
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h3>초대코드 발급받기</h3>
+          <p>카카오 채널로 문의하면 초대코드를 발급받을 수 있어요. 무료 7일 체험부터 시작해보세요.</p>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3>Threads 토큰 발급</h3>
+          <p>Meta 개발자 콘솔에서 장기 액세스 토큰을 발급받아요. 매뉴얼이 제공되니 어렵지 않아요. 한 번만 하면 60일간 유효해요.</p>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3>계정 등록 & 주제 설정</h3>
+          <p>발급받은 토큰으로 계정을 등록하고, 주제 태그와 말투를 설정해요. 자동 스케줄러도 이때 같이 설정할 수 있어요.</p>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <h3>자동 발행 시작</h3>
+          <p>이제 AI가 알아서 글을 쓰고 발행해요. 주제 몇 개만 등록해두면 매일 자동으로 Threads가 운영돼요.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 최하단 CTA -->
+<section class="cta">
+  <h2 class="cta-title reveal">지금 바로 시작해볼까요?</h2>
+  <p class="cta-desc reveal">
+    7일 무료 체험으로 부담 없이 시작해보세요.<br>
+    초대코드 발급은 카카오로 문의해주세요.
+  </p>
+  <a href="https://open.kakao.com/o/sdwT0Zoi" target="_blank" class="cta-kakao reveal">
+    💬 카카오로 문의하기
+  </a>
+  <div style="margin-top:20px;font-size:12px;color:var(--txt2)" class="reveal">
+    또는 <a href="https://zheiia-thread.up.railway.app" target="_blank" style="color:var(--acc);text-decoration:none">앱 바로가기 →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">ThreadsAuto</div>
+  <div class="footer-txt">© 2025 ThreadsAuto. All rights reserved.</div>
+  <a href="https://open.kakao.com/o/sdwT0Zoi" target="_blank" style="font-size:12px;color:var(--txt2);text-decoration:none">💬 문의하기</a>
+</footer>
+
+<script>
+// 스크롤 reveal
+const observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(function(el) {
+  observer.observe(el);
+});
+
+// 수치 카운터 애니메이션
+function animateValue(el, start, end, duration, suffix) {
+  var startTime = null;
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    var progress = Math.min((timestamp - startTime) / duration, 1);
+    el.textContent = Math.floor(progress * (end - start) + start) + suffix;
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+</script>
+</body>
+</html>
